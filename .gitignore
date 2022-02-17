@@ -1,0 +1,13 @@
+# ignore binaries with no extension
+*
+!*.*
+!*/
+#
+
+build/
+.vscode/
+.idea/
+logs/
+save/
+src/__pycache__
+data/
