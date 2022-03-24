@@ -55,6 +55,15 @@ int main(int argc, char** argv) {
   //   output << weights;
   // }
 
+  std::ifstream ifile;
+  ifile.open(DATAFOLDER + "/Params.txt");
+  if (!ifile){
+    std::ofstream output(DATAFOLDER + "/Params.txt");
+    if (output.is_open()){
+      output << numberOfVectors;
+    }
+  }
+
   LPPublicKey<DCRTPoly> pk;
   if (Serial::DeserializeFromFile(DATAFOLDER + "/key-public.txt", pk,
                                   SerType::BINARY) == false) {

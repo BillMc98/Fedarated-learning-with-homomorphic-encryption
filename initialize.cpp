@@ -71,6 +71,12 @@ int main(int argc, char** argv){
 
   std::cout << "The secret key has been serialized." << std::endl;
 
+  // Delete Params from previous runs
+  std::ifstream ifile;
+  ifile.open(DATAFOLDER + "/Params.txt");
+  if (ifile)
+    std::remove("demoData/Params.txt");
+
   // Generate the relinearization key
   //cc->EvalMultKeyGen(kp.secretKey);
 
