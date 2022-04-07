@@ -64,7 +64,7 @@ int main(int argc, char** argv){
   // Serialize the secret keys
   if (!Serial::SerializeToFile(DATAFOLDER + "/key-private" + argv[1] + ".txt",
                                kp.secretKey, SerType::BINARY)) {
-    std::cerr << "Error writing serialization of private key to key-private1.txt"
+    std::cerr << "Error writing serialization of private key to key-private" + argv[1] + ".txt"
               << std::endl;
     return 1;
   }
