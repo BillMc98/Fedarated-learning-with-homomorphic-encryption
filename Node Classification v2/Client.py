@@ -9,6 +9,7 @@ class Client:
         self.A = A
         self.x = x
         self.y = y
+        self.sx = {}
         self.model = None
         self.optimizer = None
         self.train_mask = None

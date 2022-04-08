@@ -5,12 +5,17 @@ from collections import OrderedDict
 
 
 def writer(w, numOfClients):
+    MyDict = {}
+    counter = 0
     if os.path.exists("demoData/client{}.txt".format(numOfClients)):
         os.remove("demoData/client{}.txt".format(numOfClients))
     for i in w:
         with open('demoData/client{}.txt'.format(numOfClients), "a") as f:
             f.write('\n')
             np.savetxt(f, w.get(i), fmt='%1.10f', newline=" ")
+        MyDict[i] = "client{}{}.txt".format(numOfClients, counter)
+        counter = counter + 1
+    return MyDict
 
 
 def WeightWriter(w):

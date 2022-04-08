@@ -40,12 +40,13 @@ from Server import Aggregation_Server
 MyServer = Aggregation_Server()
 MyServer.set_model(copy.deepcopy(model))
 
+#Encrypt features
 subprocess.run("./initialize")
-writer(Client1.x, 1)
+Client1.sx = writer(Client1.x, 1)
 subprocess.run(["./encrypt", "1"])
-writer(Client1.x, 2)
+Client2.sx = writer(Client2.x, 2)
 subprocess.run(["./encrypt", "2"])
-writer(Client3.x, 3)
+Client3.sx = writer(Client3.x, 3)
 subprocess.run(["./encrypt", "3"])
 
 # Create and initialize Security Machine
