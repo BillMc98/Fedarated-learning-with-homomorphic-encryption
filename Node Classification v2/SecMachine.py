@@ -1,3 +1,5 @@
+import subprocess
+
 import numpy as np
 import torch
 import shutil
@@ -37,7 +39,7 @@ class SecMachine:
         self.features[Client.id]= Client.sx
         #print(Client.x)
         self.node_keys[Client.id] = list(Client.sx.keys())
-        print(list(Client.x.keys()))
+        # print(list(Client.x.keys()))
 
     def find_connections(self, id1, id2):
         nodes1 = self.node_keys[id1]
@@ -45,7 +47,7 @@ class SecMachine:
         counter = 0
         for node in nodes1:
             neighborhood = np.nonzero(self.global_map[node][0])[1]
-            print(neighborhood)
+            # print(neighborhood)
             for j in neighborhood:
                 if j in nodes2:
                     self.maps[id1] = update_adjacency_matrix(self.maps[id1], counter)
@@ -56,7 +58,7 @@ class SecMachine:
         num_of_lines = len(self.features[id])
         if label == 1:
             # matrix mult
-            # subprocess.run(["./matrixMult", str(featuresNumber), str(weightsNumber)])
+            subprocess.run(["./matrixMult", str(num_of_lines), str(weight.shape[1]), str(id)])
             support = torch.mm(torch.tensor(list(self.features[id].values())), weight)   
             output = torch.mm(torch.tensor(self.maps[id].A.astype(np.float32)), support)
             # true_nodes = len(self.node_keys[id])

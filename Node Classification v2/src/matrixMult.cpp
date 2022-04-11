@@ -13,17 +13,12 @@ const std::string DATAFOLDER = "demoData";
 
 // Instantiate the crypto context
 SecurityLevel securityLevel = HEStd_128_classic;
-  uint32_t depth = 2;
+  uint32_t depth = 3;
   uint32_t scaleFactorBits = 50;
 
-  uint32_t n = std::stoi(argv[0]);
-  uint32_t m = 6;
-  uint32_t l = std::stoi(argv[1]);
-
-  vector<vector<double>> x(n);
-  vector<vector<double>> w(l);
-
-  std::cout << x << std::endl << w << std::endl;
+  uint32_t n = std::stoi(argv[1]);
+  uint32_t m = 10;
+  uint32_t l = std::stoi(argv[2]);
 
   // Instantiate the crypto context
   CryptoContext<DCRTPoly> cc =
@@ -32,14 +27,15 @@ SecurityLevel securityLevel = HEStd_128_classic;
 // Enable features that you wish to use
 cc->Enable(ENCRYPTION);
 cc->Enable(SHE);
+cc->Enable(LEVELEDSHE);
 cc->Enable(MULTIPARTY);
 
-  LPPublicKey<DCRTPoly> pk;
-  if (Serial::DeserializeFromFile(DATAFOLDER + "/key-public.txt", pk,
-                                  SerType::BINARY) == false) {
-    std::cerr << "Could not read public key" << std::endl;
-    return 1;
-  }
+  // LPPublicKey<DCRTPoly> pk;
+  // if (Serial::DeserializeFromFile(DATAFOLDER + "/key-public.txt", pk,
+  //                                 SerType::BINARY) == false) {
+  //   std::cerr << "Could not read public key" << std::endl;
+  //   return 1;
+  // }
 
   std::ifstream emkeys(DATAFOLDER + "/key-eval-mult.txt",
                        std::ios::in | std::ios::binary);
@@ -53,43 +49,69 @@ cc->Enable(MULTIPARTY);
     return 1;
   }
 
-cc->EvalSumKeyGen(keys.secretKey);
+  std::ifstream sumkeys(DATAFOLDER + "/key-eval-sum.txt",
+                       std::ios::in | std::ios::binary);
+  if (!sumkeys.is_open()) {
+    std::cerr << "I cannot read serialization from "
+              << DATAFOLDER + "/key-eval-sum.txt" << std::endl;
+    return 1;
+  }
+  if (cc->DeserializeEvalSumKey(sumkeys, SerType::BINARY) == false) {
+    std::cerr << "Could not deserialize the eval sum key file" << std::endl;
+    return 1;
+  }
 
-vector <Plaintext> plainX;
-vector <Plaintext> plainW;
-vector <Ciphertext<DCRTPoly>> cipherX;
-vector <Ciphertext<DCRTPoly>> cipherW;
+vector<Ciphertext<DCRTPoly>> cipherX(n,0);
+vector<Ciphertext<DCRTPoly>> cipherW(l,0);
+
+for (uint32_t i=0; i<n; ++i){
+  if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertext" + argv[3] + std::to_string(i) + ".txt", cipherX[i],
+                                  SerType::BINARY) == false) {
+    std::cerr << "Could not read the ciphertext" << std::endl;
+    return 1;
+  }
+}
+
+for (uint32_t i=0; i<l; ++i){
+  if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertextWeights" + std::to_string(i) + ".txt", cipherW[i],
+                                  SerType::BINARY) == false) {
+    std::cerr << "Could not read the weights ciphertext" << std::endl;
+    return 1;
+  }
+}
+
+vector<LPPrivateKey<DCRTPoly>> secretKey(3,0);
+for (int i=0; i<3; ++i){
+  if (Serial::DeserializeFromFile(DATAFOLDER + "/key-private" + std::to_string(i+1) + ".txt", secretKey[i],
+                                  SerType::BINARY) == false) {
+    std::cerr << "Could not read secret key" << std::endl;
+    return 1;
+  }
+}
+
+// Matrix multiplication and decryption should be done by different
+// entities, but here they happen simultaneously for efficiency
+Plaintext out;
 Ciphertext<DCRTPoly> cMul;
 Ciphertext<DCRTPoly> cSum;
-vector <Ciphertext<DCRTPoly>> cipherOut(n);
-Plaintext out;
-
-for (uint32_t j=0; j<n; ++j){
-  plainX.push_back(cc->MakeCKKSPackedPlaintext(x[j]));
-  cipherX.push_back(cc->Encrypt(keys.publicKey, plainX[j]));
-}
-for (uint32_t j=0; j<l; ++j){
-  plainW.push_back(cc->MakeCKKSPackedPlaintext(w[j]));
-  cipherW.push_back(cc->Encrypt(keys.publicKey, plainW[j]));
-}
-
-string temp;
-//vector <double> temp = {0};
-//cipherOut[0] = cc->Encrypt(keys.publicKey, cc->MakeCKKSPackedPlaintext(temp));
-std::stringstream ss;
+std::ofstream output(DATAFOLDER + "/conv_output.txt");
+vector<Ciphertext<DCRTPoly>> ciphertextPartial;
 for (uint32_t i=0; i<n; ++i){
   for (uint32_t j=0; j<l; ++j){
     cMul = cc->EvalMult(cipherX[i], cipherW[j]);
     cSum = cc->EvalSum(cMul,m);
-    cc->Decrypt(keys.secretKey, cSum, &out);
+    ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
+    ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
+    ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
+    std::cout << "here" << std::endl;
+    cc->MultipartyDecryptFusion(ciphertextPartial, &out);
+    std::cout << "here" << std::endl;
     out->SetLength(1);
-    ss << out;
-  //  cipherOut[0] = cc->EvalAdd(cipherOut[0],cSum);
+    if (output.is_open())
+      output << out;
+    ciphertextPartial.clear();
   }
 }
-
-//  ss >> test;
-//  std::cout << test << std::endl;
 
 return 0;
 

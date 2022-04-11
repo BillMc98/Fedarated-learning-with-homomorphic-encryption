@@ -18,7 +18,7 @@ int main(){
 
   // Set the main parameters
   SecurityLevel securityLevel = HEStd_128_classic;
-  uint32_t depth = 2;
+  uint32_t depth = 3;
   uint32_t scaleFactorBits = 50;
 
   // Instantiate the crypto context
@@ -110,7 +110,7 @@ int main(){
 
   std::ofstream sumkeyfile(DATAFOLDER + "/" + "key-eval-sum.txt",
                           std::ios::out | std::ios::binary);
-  if (emkeyfile.is_open()) {
+  if (sumkeyfile.is_open()) {
     if (cc->SerializeEvalSumKey(sumkeyfile, SerType::BINARY) == false) {
       std::cerr << "Error writing serialization of the eval sum keys to "
                    "key-sum-mult.txt"

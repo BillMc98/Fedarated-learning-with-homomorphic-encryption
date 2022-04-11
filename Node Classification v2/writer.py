@@ -13,7 +13,7 @@ def writer(w, numOfClients):
         with open('demoData/client{}.txt'.format(numOfClients), "a") as f:
             f.write('\n')
             np.savetxt(f, w.get(i), fmt='%1.10f', newline=" ")
-        MyDict[i] = "client{}{}.txt".format(numOfClients, counter)
+        MyDict[i] = "ciphertext{}{}.txt".format(numOfClients, counter)
         counter = counter + 1
     return MyDict
 

@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
 
   // Set the main parameters
   SecurityLevel securityLevel = HEStd_128_classic;
-  uint32_t depth = 2;
+  uint32_t depth = 3;
   uint32_t scaleFactorBits = 50;
     
   // Instantiate the crypto context
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   for (int i=0; i<numberOfVectors; ++i){
     Plaintext plaintext = cc->MakeCKKSPackedPlaintext(weights[i]);
     auto ciphertext = cc->Encrypt(pk, plaintext);
-    if (!Serial::SerializeToFile(DATAFOLDER + "/" + "ciphertext" + argv[1] + std::to_string(i) + ".txt",
+    if (!Serial::SerializeToFile(DATAFOLDER + "/" + "ciphertext" + std::string(argv[1]) + std::to_string(i) + ".txt",
                                 ciphertext, SerType::BINARY)) {
       std::cerr
           << "Error writing serialization of ciphertext"
