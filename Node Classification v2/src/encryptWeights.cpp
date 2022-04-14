@@ -14,7 +14,7 @@ int main() {
 
   // Set the main parameters
   SecurityLevel securityLevel = HEStd_128_classic;
-  uint32_t depth = 3;
+  uint32_t depth = 2;
   uint32_t scaleFactorBits = 50;
     
   // Instantiate the crypto context

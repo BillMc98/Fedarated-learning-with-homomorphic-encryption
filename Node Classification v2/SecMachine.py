@@ -3,6 +3,7 @@ import subprocess
 import numpy as np
 import torch
 import shutil
+from writer import conv_reader
 
 def update_adjacency_matrix(A, counter):
     n = len(A)
@@ -20,10 +21,8 @@ def update_features(x, x_to_add, id1):
     x[maximum_key+1] = new_name
     #Update file Directory
     src = "demoData/{}".format(x_to_add)   
-    dest = "helpData/{}".format(new_name)
-    shutil.copy(src, dest)  
-    dest2 = "demoData/{}".format(new_name)
-    shutil.move(dest,dest2)
+    dest = "demoData/{}".format(new_name)
+    shutil.copy(src, dest)
     return x
 
 class SecMachine:
@@ -58,8 +57,9 @@ class SecMachine:
         num_of_lines = len(self.features[id])
         if label == 1:
             # matrix mult
-            subprocess.run(["./matrixMult", str(num_of_lines), str(weight.shape[1]), str(id)])
-            support = torch.mm(torch.tensor(list(self.features[id].values())), weight)   
+            # subprocess.run(["./matrixMult", str(num_of_lines), str(weight.shape[0]), str(weight.shape[1]), str(id)])
+            support = conv_reader("demoData/conv_output.txt", num_of_lines, weight.shape[1])
+            # support = torch.mm(torch.tensor(list(self.features[id].values())), weight)
             output = torch.mm(torch.tensor(self.maps[id].A.astype(np.float32)), support)
             # true_nodes = len(self.node_keys[id])
             # output = output[0:true_nodes]

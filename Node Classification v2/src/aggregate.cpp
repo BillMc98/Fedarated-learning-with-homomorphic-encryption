@@ -10,7 +10,7 @@ using namespace lbcrypto;
 
 const std::string DATAFOLDER = "demoData";
 
-int main(){
+int main(int argc, char** argv){
 
   // Set the main parameters
   SecurityLevel securityLevel = HEStd_128_classic;
@@ -26,6 +26,7 @@ int main(){
   cc->Enable(ENCRYPTION);
   cc->Enable(SHE);
   cc->Enable(LEVELEDSHE);
+  cc->Enable(MULTIPARTY);
 
   LPPublicKey<DCRTPoly> pk;
   if (Serial::DeserializeFromFile(DATAFOLDER + "/key-public.txt", pk,
@@ -34,24 +35,18 @@ int main(){
     return 1;
   }
 
-  // std::ifstream emkeys(DATAFOLDER + "/key-eval-mult.txt",
-  //                      std::ios::in | std::ios::binary);
-  // if (!emkeys.is_open()) {
-  //   std::cerr << "I cannot read serialization from "
-  //             << DATAFOLDER + "/key-eval-mult.txt" << std::endl;
-  //   return 1;
-  // }
-  // if (cc->DeserializeEvalMultKey(emkeys, SerType::BINARY) == false) {
-  //   std::cerr << "Could not deserialize the eval mult key file" << std::endl;
-  //   return 1;
-  // }
+  std::ifstream infile(DATAFOLDER + "/Params.txt");
+  int numberOfVectors;
+  infile >> numberOfVectors;
+  infile.close();
+  int numberOfClients = std::stoi(argv[1]);
 
-  vector<Ciphertext<DCRTPoly>> ciphertext(28,0);
-  for (int i=0; i<4; ++i){
-    for (int j=0; j<7; ++j){
-      if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertext" + std::to_string(i) + std::to_string(j) + ".txt", ciphertext[i*7+j],
+  vector<Ciphertext<DCRTPoly>> ciphertext(numberOfClients*numberOfVectors,0);
+  for (int i=0; i<numberOfClients; ++i){
+    for (int j=0; j<numberOfVectors; ++j){
+      if (Serial::DeserializeFromFile(DATAFOLDER + "/AggregationWeights" + std::to_string(i) + std::to_string(j) + ".txt", ciphertext[i*numberOfVectors+j],
                                       SerType::BINARY) == false) {
-        std::cerr << "Could not read the ciphertext" << std::endl;
+        std::cerr << "Could not read the weight ciphertext for aggregation" << std::endl;
         return 1;
       }
     }
@@ -60,26 +55,51 @@ int main(){
   // Homomorphic additions
   Ciphertext<DCRTPoly> ciphertextAdd1;
   Ciphertext<DCRTPoly> ciphertextAdd2;
-  vector<Ciphertext<DCRTPoly>> ciphertextAddResult(7,0);
-  vector<Ciphertext<DCRTPoly>> ciphertextMultResult(7,0);
-  for (int i=0; i<7; ++i){
-    ciphertextAdd1 = cc->EvalAdd(ciphertext[0+i], ciphertext[7+i]);
-    ciphertextAdd2 = cc->EvalAdd(ciphertext[14+i], ciphertext[21+i]);
-    ciphertextAddResult[i] = cc->EvalAdd(ciphertextAdd1, ciphertextAdd2);
-    ciphertextMultResult[i] = cc->EvalMult(ciphertextAddResult[i], 0.25);
+  vector<Ciphertext<DCRTPoly>> ciphertextAddResult(numberOfVectors,0);
+  vector<Ciphertext<DCRTPoly>> ciphertextMultResult(numberOfVectors,0);
+  for (int i=0; i<numberOfVectors; ++i){
+    ciphertextAdd1 = cc->EvalAdd(ciphertext[i], ciphertext[numberOfVectors+i]);
+    ciphertextAddResult[i] = cc->EvalAdd(ciphertextAdd1, ciphertext[2*numberOfVectors+i]);
+    ciphertextMultResult[i] = cc->EvalMult(ciphertextAddResult[i], double(1)/3);
   }
 
-  for (int i=0; i<7; ++i){
-    Plaintext plaintext = cc->MakeCKKSPackedPlaintext(weights[i]);
-    auto ciphertext = cc->Encrypt(pk, plaintext);
-    if (!Serial::SerializeToFile(DATAFOLDER + "/" + "result" + std::to_string(i) + ".txt",
-                                ciphertext, SerType::BINARY)) {
-      std::cerr
-          << "Error writing serialization of ciphertext"
-          << std::endl;
+  // Decryption
+
+  vector<vector<Ciphertext<DCRTPoly>>> ciphertextPartial(numberOfVectors);
+
+  for (int j=1; j<numberOfClients+1; ++j){
+    LPPrivateKey<DCRTPoly> secretKey;
+    if (Serial::DeserializeFromFile(DATAFOLDER + "/key-private" + std::to_string(j) + ".txt", secretKey,
+                                    SerType::BINARY) == false) {
+      std::cerr << "Could not read secret key" << std::endl;
       return 1;
     }
+
+  // Decrypt the result of multiplication
+    if (j==1){
+      for (int i=0; i<numberOfVectors; ++i){
+        ciphertextPartial[i].push_back(cc->MultipartyDecryptLead(secretKey, {ciphertextMultResult[i]})[0]);
+      }
+    }
+    else {
+      for (int i=0; i<numberOfVectors; ++i){
+        ciphertextPartial[i].push_back(cc->MultipartyDecryptMain(secretKey, {ciphertextMultResult[i]})[0]);
+      }
+    }
   }
+
+  vector<Plaintext> plaintextMultResult(numberOfVectors,0);
+  for (int i=0; i<numberOfVectors; ++i){
+    cc->MultipartyDecryptFusion(ciphertextPartial[i], &plaintextMultResult[i]);
+  }
+
   
+  std::ofstream output(DATAFOLDER + "/Average.txt");
+  if (output.is_open()){
+    for(int i=0; i<numberOfVectors; ++i){
+      output << plaintextMultResult[i];
+    }
+  }
+
   return 0;
 }

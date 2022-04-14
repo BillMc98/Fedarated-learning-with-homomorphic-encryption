@@ -32,14 +32,14 @@ int main(int argc, char** argv) {
   double input;
   int numberOfVectors = 0;
   vector<vector<double>> weights;
-  std::ifstream infile(std::string(DATAFOLDER + "/client") + std::string(argv[1]) + ".txt");
+  std::ifstream infile(std::string(DATAFOLDER + "/weight") + std::string(argv[1]) + ".txt");
   
   if (infile >> input){
     do {
       ++numberOfVectors;
       vector<double> w;
       w.push_back(input);
-      for (int j=0; j<10-1 && (infile >> input); ++j){
+      for (int j=0; j<8192-1 && (infile >> input); ++j){
         w.push_back(input);
       }
       weights.push_back(w);
@@ -55,14 +55,14 @@ int main(int argc, char** argv) {
   //   output << weights;
   // }
 
-  // std::ifstream ifile;
-  // ifile.open(DATAFOLDER + "/Params.txt");
-  // if (!ifile){
-  //   std::ofstream output(DATAFOLDER + "/Params.txt");
-  //   if (output.is_open()){
-  //     output << numberOfVectors;
-  //   }
-  // }
+  std::ifstream ifile;
+  ifile.open(DATAFOLDER + "/Params.txt");
+  if (!ifile){
+    std::ofstream output(DATAFOLDER + "/Params.txt");
+    if (output.is_open()){
+      output << numberOfVectors;
+    }
+  }
 
   LPPublicKey<DCRTPoly> pk;
   if (Serial::DeserializeFromFile(DATAFOLDER + "/key-public.txt", pk,
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   for (int i=0; i<numberOfVectors; ++i){
     Plaintext plaintext = cc->MakeCKKSPackedPlaintext(weights[i]);
     auto ciphertext = cc->Encrypt(pk, plaintext);
-    if (!Serial::SerializeToFile(DATAFOLDER + "/" + "ciphertext" + std::string(argv[1]) + std::to_string(i) + ".txt",
+    if (!Serial::SerializeToFile(DATAFOLDER + "/" + "AggregationWeights" + argv[1] + std::to_string(i) + ".txt",
                                 ciphertext, SerType::BINARY)) {
       std::cerr
           << "Error writing serialization of ciphertext"

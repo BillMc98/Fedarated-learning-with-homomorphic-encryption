@@ -18,7 +18,7 @@ int main(){
 
   // Set the main parameters
   SecurityLevel securityLevel = HEStd_128_classic;
-  uint32_t depth = 3;
+  uint32_t depth = 2;
   uint32_t scaleFactorBits = 50;
 
   // Instantiate the crypto context
@@ -65,8 +65,8 @@ int main(){
   // s_c*(s_a + s_b + s_c)
   auto evalMultCABC = cc->MultiMultEvalKey(evalMultABC, kp3.secretKey, kp3.publicKey->GetKeyTag());
 
-  auto evalSumKeysC = cc->MultiEvalSumKeyGen(kp3.secretKey, evalSumKeys, kp3.publicKey->GetKeyTag());
-  auto evalSumKeysABC = cc->MultiAddEvalSumKeys(evalSumKeysB, evalSumKeysC, kp3.publicKey->GetKeyTag());
+  auto evalSumKeysC = cc->MultiEvalSumKeyGen(kp3.secretKey, evalSumKeysAB, kp3.publicKey->GetKeyTag());
+  auto evalSumKeysABC = cc->MultiAddEvalSumKeys(evalSumKeysAB, evalSumKeysC, kp3.publicKey->GetKeyTag());
   cc->InsertEvalSumKey(evalSumKeysABC);
 
   // Round 4 (party A)
@@ -149,11 +149,11 @@ int main(){
 
   std::cout << "The secret keys have been serialized." << std::endl;
 
-  // // Delete Params from previous runs
-  // std::ifstream ifile;
-  // ifile.open(DATAFOLDER + "/Params.txt");
-  // if (ifile)
-  //   std::remove("demoData/Params.txt");
+  // Delete Params from previous runs
+  std::ifstream ifile;
+  ifile.open(DATAFOLDER + "/Params.txt");
+  if (ifile)
+    std::remove("demoData/Params.txt");
 
   // Generate the relinearization key
   //cc->EvalMultKeyGen(kp.secretKey);

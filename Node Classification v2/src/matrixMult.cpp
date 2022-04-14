@@ -13,12 +13,12 @@ const std::string DATAFOLDER = "demoData";
 
 // Instantiate the crypto context
 SecurityLevel securityLevel = HEStd_128_classic;
-  uint32_t depth = 3;
+  uint32_t depth = 2;
   uint32_t scaleFactorBits = 50;
 
-  uint32_t n = std::stoi(argv[1]);
-  uint32_t m = 10;
-  uint32_t l = std::stoi(argv[2]);
+  int n = std::stoi(argv[1]);
+  int m = std::stoi(argv[2]);
+  int l = std::stoi(argv[3]);
 
   // Instantiate the crypto context
   CryptoContext<DCRTPoly> cc =
@@ -64,15 +64,15 @@ cc->Enable(MULTIPARTY);
 vector<Ciphertext<DCRTPoly>> cipherX(n,0);
 vector<Ciphertext<DCRTPoly>> cipherW(l,0);
 
-for (uint32_t i=0; i<n; ++i){
-  if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertext" + argv[3] + std::to_string(i) + ".txt", cipherX[i],
+for (int i=0; i<n; ++i){
+  if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertext" + argv[4] + std::to_string(i) + ".txt", cipherX[i],
                                   SerType::BINARY) == false) {
     std::cerr << "Could not read the ciphertext" << std::endl;
     return 1;
   }
 }
 
-for (uint32_t i=0; i<l; ++i){
+for (int i=0; i<l; ++i){
   if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertextWeights" + std::to_string(i) + ".txt", cipherW[i],
                                   SerType::BINARY) == false) {
     std::cerr << "Could not read the weights ciphertext" << std::endl;
@@ -96,16 +96,14 @@ Ciphertext<DCRTPoly> cMul;
 Ciphertext<DCRTPoly> cSum;
 std::ofstream output(DATAFOLDER + "/conv_output.txt");
 vector<Ciphertext<DCRTPoly>> ciphertextPartial;
-for (uint32_t i=0; i<n; ++i){
-  for (uint32_t j=0; j<l; ++j){
+for (int i=0; i<n; ++i){
+  for (int j=0; j<l; ++j){
     cMul = cc->EvalMult(cipherX[i], cipherW[j]);
     cSum = cc->EvalSum(cMul,m);
     ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
     ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
     ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
-    std::cout << "here" << std::endl;
     cc->MultipartyDecryptFusion(ciphertextPartial, &out);
-    std::cout << "here" << std::endl;
     out->SetLength(1);
     if (output.is_open())
       output << out;

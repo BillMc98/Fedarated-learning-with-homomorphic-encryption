@@ -5,7 +5,7 @@ import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from helpers import tester
-from writer import writer, reader
+from writer import writer, reader, ModelWriter
 from data_preprocess import load_data, split_communities, create_clients
 
 torch.manual_seed(12345)
@@ -39,6 +39,12 @@ Client3 = simple_train_test_split(Client3, 0.7)
 from Server import Aggregation_Server
 MyServer = Aggregation_Server()
 MyServer.set_model(copy.deepcopy(model))
+
+global_weights = model.state_dict()
+
+shapes = []
+for i in global_weights.keys():
+    shapes.append(list(global_weights.get(i).shape))
 
 #Encrypt features
 subprocess.run("./initialize")
@@ -85,7 +91,20 @@ for round in range(10):
     localdraw3.append(tester(Client3.model, Client3, MyMachine))
 
     # FedAvg Local Models on Server
-    Client1.model, Client2.model, Client3.model = MyServer.perform_fed_avg(Client1.model, Client2.model, Client3.model)
+    ModelWriter(Client1.model.state_dict(), 0)
+    ModelWriter(Client2.model.state_dict(), 1)
+    ModelWriter(Client3.model.state_dict(), 2)
+    subprocess.run(["./encryptAggr", str(0)])
+    subprocess.run(["./encryptAggr", str(1)])
+    subprocess.run(["./encryptAggr", str(2)])
+    subprocess.run(["./aggregate", str(3)])
+    global_weights = reader("demoData/Average.txt", shapes, list(global_weights.keys()))
+    model.load_state_dict(global_weights)
+    Client1.model.load_state_dict(global_weights)
+    Client2.model.load_state_dict(global_weights)
+    Client3.model.load_state_dict(global_weights)
+
+    # Client1.model, Client2.model, Client3.model = MyServer.perform_fed_avg(Client1.model, Client2.model, Client3.model)
 
     # Test Server Model on every clients data
     server_acc = (tester(MyServer.model, Client1, MyMachine) +tester(MyServer.model, Client2, MyMachine) + tester(MyServer.model, Client3, MyMachine))/3
