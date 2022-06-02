@@ -74,11 +74,11 @@ localdraw2 = []
 localdraw3 = []
 serverdraw = []
 # Federated Learning
-for round in range(10):
+for round in range(1):
     #Train Local Models
-    Client1.train_local_model(epochs=10, machine=MyMachine)
-    Client2.train_local_model(epochs=10, machine=MyMachine)
-    Client3.train_local_model(epochs=10, machine=MyMachine)
+    Client1.train_local_model(epochs=1, machine=MyMachine)
+    Client2.train_local_model(epochs=1, machine=MyMachine)
+    Client3.train_local_model(epochs=1, machine=MyMachine)
 
     # if round == 0:
     #     res = (tester(Client2.model, Client1, MyMachine) +tester(Client2.model, Client2, MyMachine) + tester(Client2.model, Client3, MyMachine))/3
