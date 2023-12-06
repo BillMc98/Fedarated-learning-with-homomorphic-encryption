@@ -11,16 +11,27 @@ from server import perform_federated_round
 from sklearn.metrics import f1_score, precision_score, recall_score, confusion_matrix
 import subprocess
 from writer import ModelWriter
+import time
+import pickle5
+import random
+random.seed(12345)
+import numpy as np
+np.random.seed(12345)
+torch.manual_seed(12345)
+torch.cuda.manual_seed_all(12345)
+torch.backends.cudnn.deterministic = True
+# get the start time
+st = time.time()
 
 parser = argparse.ArgumentParser(description='Insert Arguments')
 
 parser.add_argument('--model', type=str, default="gcn", help='GNN used in training')
 parser.add_argument("--dataset", type=str, default="enzymes", help="dataset used for training")
-parser.add_argument("--clients", type=int, default=4, help="number of clients")
-parser.add_argument("--parameterC", type=int, default=2, help="num of clients randomly selected to participate in Federated Learning")
-parser.add_argument("--hidden_channels", type=int, default=16, help="size of GNN hidden layer")
+parser.add_argument("--clients", type=int, default=3, help="number of clients")
+parser.add_argument("--parameterC", type=int, default=3, help="num of clients randomly selected to participate in Federated Learning")
+parser.add_argument("--hidden_channels", type=int, default=32, help="size of GNN hidden layer")
 parser.add_argument("--batch_size", type=int, default=16, help="input batch size for training (default: 16)")
-parser.add_argument("--epochs", type=int, default=20, help="epochs for training")
+parser.add_argument("--epochs", type=int, default=70, help="epochs for training")
 parser.add_argument("--federated_rounds", type=int, default=30, help="federated rounds performed")
 
 args = parser.parse_args()
@@ -93,6 +104,16 @@ for round_id in range(1,args.federated_rounds + 1):
 
     server_acc = perform_federated_round(server_model, Client_list,round_id,test_loader, args, shapes)
     server_accuracy_per_round.append(server_acc)
+
+
+# get the end time
+et = time.time()
+# get the execution time
+elapsed_time = et - st
+print(f'Execution time: {elapsed_time:.2f} seconds')
+
+with open("test0", "wb") as fp:   #Pickling
+    pickle5.dump(server_accuracy_per_round, fp)
 
 simple_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
 for data in simple_loader:

@@ -71,10 +71,13 @@ int main(int argc, char** argv){
         ciphertextAddResult.push_back(cc->EvalAdd(ciphertext[i], ciphertext[step*numberOfVectors+i]));
       }
       if (isOdd){
-      ciphertextAddResult.push_back(ciphertext.back());
+        for (int i=0; i<numberOfVectors; ++i){
+          ciphertextAddResult.push_back(ciphertext.end()[i-numberOfVectors]);
+        }
+        ++step;
       }
       ciphertext = ciphertextAddResult;
-      isOdd = (step%2)^isOdd;
+      isOdd = step%2;
       step = step/2;
   }
   vector<Ciphertext<DCRTPoly>> ciphertextMultResult(numberOfVectors,0);

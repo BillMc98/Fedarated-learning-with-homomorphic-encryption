@@ -2,6 +2,7 @@ from torch_geometric.datasets import Planetoid
 import torch_geometric.transforms as T
 from torch_geometric.utils import to_networkx
 import networkx as nx
+from torch_geometric.datasets import KarateClub
 
 def load_data(args):
     #Import and Examine Dataset
@@ -11,6 +12,8 @@ def load_data(args):
         dataset = Planetoid(root='data/Planetoid', name='Cora', transform=T.LargestConnectedComponents())
     elif args.dataset.lower() == 'citeseer':
         dataset = Planetoid(root='data/Planetoid', name='CiteSeer',transform=T.LargestConnectedComponents())
+    elif args.dataset.lower() == 'karateclub':
+        dataset = KarateClub()
     else:
         print("No such dataset!")
         exit()

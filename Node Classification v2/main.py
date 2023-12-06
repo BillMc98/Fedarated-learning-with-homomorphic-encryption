@@ -5,6 +5,7 @@ import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+
 from helpers import tester
 from writer import writer, reader, ModelWriter
 from data_preprocess import load_data, split_communities, create_clients
@@ -17,10 +18,10 @@ np.random.seed(12345)
 
 parser = argparse.ArgumentParser(description='Insert Arguments')
 
-parser.add_argument("--dataset", type=str, default="cora", help="dataset used for training")
+parser.add_argument("--dataset", type=str, default="karateclub", help="dataset used for training")
 parser.add_argument("--clients", type=int, default=3, help="number of clients")
 parser.add_argument("--split", type=float, default=0.8, help="test/train dataset split percentage")
-parser.add_argument("--parameterC", type=int, default=2, help="num of clients randomly selected to participate in Federated Learning")
+parser.add_argument("--parameterC", type=int, default=3, help="num of clients randomly selected to participate in Federated Learning")
 parser.add_argument("--hidden_channels", type=int, default=16, help="size of GNN hidden layer")
 parser.add_argument("--learning_rate", type=int, default=0.01, help="learning rate for training")
 parser.add_argument("--epochs", type=int, default=20, help="epochs for training")
@@ -53,11 +54,12 @@ for i in global_weights.keys():
     shapes.append(list(global_weights.get(i).shape))
 
 #Encrypt features
-subprocess.run("./initialize")
+subprocess.run(["./initialize", str(num_of_features)])
 client_counter = 1
 for cl in client_list:
     cl.sx = writer(cl.x, client_counter)
-    subprocess.run(["./encrypt", str(client_counter)])
+    # num_of_lines = len(cl.x)
+    subprocess.run(["./encrypt", str(client_counter), str(num_of_features)])
     client_counter +=1
 
 #Create and initialize Security Machine
@@ -101,7 +103,7 @@ for round in range(args.federated_rounds+1):
 
     subprocess.run(["./aggregate", str(args.clients)])
     global_weights = reader("demoData/Average.txt", shapes, list(global_weights.keys()))
-    MyServer.load_state_dict(global_weights)
+    MyServer.model.load_state_dict(global_weights)
     for client in client_list:
         client.model.load_state_dict(global_weights)
 

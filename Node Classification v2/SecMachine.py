@@ -16,11 +16,11 @@ def update_adjacency_matrix(A, counter):
     return A
 
 def update_features(x, x_to_add, id1):
-    new_name = "ciphertext{}{}.txt".format(id1,len(x))
+    new_name = "ciphertext{}{}.txt".format(id1, len(x)) #Name should be changed
     maximum_key = max(x.keys())
     x[maximum_key+1] = new_name
     #Update file Directory
-    src = "demoData/{}".format(x_to_add)   
+    src = "demoData/{}".format(x_to_add)
     dest = "demoData/{}".format(new_name)
     shutil.copy(src, dest)
     return x

@@ -37,7 +37,7 @@ class GraphConvolution(Module):
         # output = torch.mm(adj, support)
         # encrypt weight
         WeightWriter(torch.transpose(self.weight, 0, 1))
-        subprocess.run("./encryptWeights")
+        subprocess.run(["./encryptWeights", str(self.weight.shape[0])])
         output = MyMachine.compute_safe_convolution(id, self.weight, label)
         if self.bias is not None:
             return output + self.bias

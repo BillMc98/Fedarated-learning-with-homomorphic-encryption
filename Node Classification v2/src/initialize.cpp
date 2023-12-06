@@ -11,7 +11,7 @@ using namespace lbcrypto;
 
 const std::string DATAFOLDER = "demoData";
 
-int main(){
+int main(int argc, char** argv){
   // std::cout << "This program requres the subdirectory `" << DATAFOLDER
   //           << "' to exist, otherwise you will get "
   //           << "an error writing serializations." << std::endl;
@@ -20,6 +20,8 @@ int main(){
   SecurityLevel securityLevel = HEStd_128_classic;
   uint32_t depth = 2;
   uint32_t scaleFactorBits = 50;
+  int test = std::stoi(argv[1]);
+  int featureNum = (test < 8192) ? test:8192;
 
   // Instantiate the crypto context
   CryptoContext<DCRTPoly> cc =
@@ -45,6 +47,10 @@ int main(){
 
   kp1 = cc->KeyGen();
   auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
+
+  cc->EvalAtIndexKeyGen(kp1.secretKey, {featureNum});
+  auto evalRotKeys = std::make_shared<std::map<usint, LPEvalKey<DCRTPoly>>>(cc->GetEvalAutomorphismKeyMap(kp1.secretKey->GetKeyTag()));
+
   cc->EvalSumKeyGen(kp1.secretKey);
   auto evalSumKeys = std::make_shared<std::map<usint, LPEvalKey<DCRTPoly>>>(cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
 
@@ -53,6 +59,9 @@ int main(){
   auto evalMultKey2 = cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
   //  "Joint evaluation multiplication key for (s_a + s_b) is generated..."
   auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2, kp2.publicKey->GetKeyTag());
+
+  auto evalRotKeysB = cc->MultiEvalAtIndexKeyGen(kp2.secretKey, evalRotKeys, {featureNum}, kp2.publicKey->GetKeyTag());
+  auto evalRotKeysJ = cc->MultiAddEvalAutomorphismKeys(evalRotKeys, evalRotKeysB, kp2.publicKey->GetKeyTag());   
   
   auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys, kp2.publicKey->GetKeyTag());
   auto evalSumKeysAB = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB, kp2.publicKey->GetKeyTag());
@@ -64,6 +73,10 @@ int main(){
   auto evalMultABC = cc->MultiAddEvalKeys(evalMultAB, evalMultKey3, kp3.publicKey->GetKeyTag());
   // s_c*(s_a + s_b + s_c)
   auto evalMultCABC = cc->MultiMultEvalKey(evalMultABC, kp3.secretKey, kp3.publicKey->GetKeyTag());
+
+  auto evalRotKeysC = cc->MultiEvalAtIndexKeyGen(kp3.secretKey, evalRotKeysJ, {featureNum}, kp3.publicKey->GetKeyTag());
+  auto evalRotKeysJoin = cc->MultiAddEvalAutomorphismKeys(evalRotKeysJ, evalRotKeysC, kp3.publicKey->GetKeyTag());                                     
+  cc->InsertEvalAutomorphismKey(evalRotKeysJoin);
 
   auto evalSumKeysC = cc->MultiEvalSumKeyGen(kp3.secretKey, evalSumKeysAB, kp3.publicKey->GetKeyTag());
   auto evalSumKeysABC = cc->MultiAddEvalSumKeys(evalSumKeysAB, evalSumKeysC, kp3.publicKey->GetKeyTag());
@@ -113,13 +126,28 @@ int main(){
   if (sumkeyfile.is_open()) {
     if (cc->SerializeEvalSumKey(sumkeyfile, SerType::BINARY) == false) {
       std::cerr << "Error writing serialization of the eval sum keys to "
-                   "key-sum-mult.txt"
+                   "key-eval-sum.txt"
                 << std::endl;
       return 1;
     }
         sumkeyfile.close();
   } else {
     std::cerr << "Error serializing eval sum keys" << std::endl;
+    return 1;
+  }
+
+  std::ofstream rotkeyfile(DATAFOLDER + "/" + "key-eval-rot.txt",
+                          std::ios::out | std::ios::binary);
+  if (rotkeyfile.is_open()) {
+    if (cc->SerializeEvalAutomorphismKey(rotkeyfile, SerType::BINARY) == false) {
+      std::cerr << "Error writing serialization of the eval rot keys to "
+                   "key-eval-rot.txt"
+                << std::endl;
+      return 1;
+    }
+        rotkeyfile.close();
+  } else {
+    std::cerr << "Error serializing eval rot keys" << std::endl;
     return 1;
   }
 

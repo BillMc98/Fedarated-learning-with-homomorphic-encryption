@@ -31,6 +31,9 @@ int main(int argc, char** argv) {
 
   double input;
   int numberOfVectors = 0;
+  int y = std::stoi(argv[2]);
+  int innerVectors = 8192/y;
+  int elementsInVector = (innerVectors <= 0) ? 8192:y;
   vector<vector<double>> weights;
   std::ifstream infile(std::string(DATAFOLDER + "/client") + std::string(argv[1]) + ".txt");
   
@@ -39,11 +42,17 @@ int main(int argc, char** argv) {
       ++numberOfVectors;
       vector<double> w;
       w.push_back(input);
-      for (int j=0; j<10-1 && (infile >> input); ++j){
+      for (int j=0; j<elementsInVector-1 && (infile >> input); ++j){
         w.push_back(input);
       }
       weights.push_back(w);
     } while(infile >> input);
+    for (int i=0; i<numberOfVectors; ++i){
+      vector<double> tempCopy = weights[i];
+      for (int j=0; j<innerVectors-1; ++j){
+        weights[i].insert( weights[i].end(), tempCopy.begin(), tempCopy.end() );
+      }      
+    }
   }
   else {
     std::cout << "No file found for encryption" << std::endl;
@@ -52,7 +61,7 @@ int main(int argc, char** argv) {
   // std::ofstream output(DATAFOLDER + "/test.txt");
   // std::cout.precision(20);
   // if (output.is_open()){
-  //   output << weights;
+  //   output << weights[0];
   // }
 
   // std::ifstream ifile;

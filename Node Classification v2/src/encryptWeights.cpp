@@ -10,7 +10,7 @@ using namespace lbcrypto;
 
 const std::string DATAFOLDER = "demoData";
 
-int main() {
+int main(int argc, char** argv) {
 
   // Set the main parameters
   SecurityLevel securityLevel = HEStd_128_classic;
@@ -31,6 +31,8 @@ int main() {
 
   double input;
   int numberOfVectors = 0;
+  int y = std::stoi(argv[1]);
+  int elementsInVector = (8192/y <= 0) ? 8192:y*(8192/y);
   vector<vector<double>> weights;
   std::ifstream infile(std::string(DATAFOLDER + "/weights.txt"));
   
@@ -39,7 +41,7 @@ int main() {
       ++numberOfVectors;
       vector<double> w;
       w.push_back(input);
-      for (int j=0; j<10-1 && (infile >> input); ++j){
+      for (int j=0; j<elementsInVector-1 && (infile >> input); ++j){
         w.push_back(input);
       }
       weights.push_back(w);

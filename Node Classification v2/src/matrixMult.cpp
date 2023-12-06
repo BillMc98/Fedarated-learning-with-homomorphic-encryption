@@ -18,7 +18,8 @@ SecurityLevel securityLevel = HEStd_128_classic;
 
   int n = std::stoi(argv[1]);
   int m = std::stoi(argv[2]);
-  int l = std::stoi(argv[3]);
+  int innerVectors = 8192/m;
+  int l = std::ceil(std::stof(argv[3])/innerVectors);
 
   // Instantiate the crypto context
   CryptoContext<DCRTPoly> cc =
@@ -61,6 +62,18 @@ cc->Enable(MULTIPARTY);
     return 1;
   }
 
+  std::ifstream rotkeys(DATAFOLDER + "/key-eval-rot.txt",
+                       std::ios::in | std::ios::binary);
+  if (!rotkeys.is_open()) {
+    std::cerr << "I cannot read serialization from "
+              << DATAFOLDER + "/key-eval-rot.txt" << std::endl;
+    return 1;
+  }
+  if (cc->DeserializeEvalAutomorphismKey(rotkeys, SerType::BINARY) == false) {
+    std::cerr << "Could not deserialize the eval rot key file" << std::endl;
+    return 1;
+  }
+
 vector<Ciphertext<DCRTPoly>> cipherX(n,0);
 vector<Ciphertext<DCRTPoly>> cipherW(l,0);
 
@@ -75,7 +88,7 @@ for (int i=0; i<n; ++i){
 for (int i=0; i<l; ++i){
   if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertextWeights" + std::to_string(i) + ".txt", cipherW[i],
                                   SerType::BINARY) == false) {
-    std::cerr << "Could not read the weights ciphertext" << std::endl;
+    std::cerr << "Could not read the weights ciphertext " + std::to_string(i) << std::endl;
     return 1;
   }
 }
@@ -100,13 +113,24 @@ for (int i=0; i<n; ++i){
   for (int j=0; j<l; ++j){
     cMul = cc->EvalMult(cipherX[i], cipherW[j]);
     cSum = cc->EvalSum(cMul,m);
-    ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
-    ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
-    ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
-    cc->MultipartyDecryptFusion(ciphertextPartial, &out);
-    out->SetLength(1);
-    if (output.is_open())
-      output << out;
+    for (int k=0; k<innerVectors; ++k){
+      ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
+      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
+      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
+      cc->MultipartyDecryptFusion(ciphertextPartial, &out);
+      out->SetLength(1);
+      if (output.is_open())
+        output << out;
+      cMul = cc->EvalAtIndex(cMul, m);
+      cSum = cc->EvalSum(cMul,m);
+    }
+      ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
+      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
+      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
+      cc->MultipartyDecryptFusion(ciphertextPartial, &out);
+      out->SetLength(1);
+      if (output.is_open())
+        output << out;
     ciphertextPartial.clear();
   }
 }

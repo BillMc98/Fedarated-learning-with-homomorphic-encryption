@@ -45,8 +45,8 @@ def ModelWriter(model, numOfClients):
 def reader(path, shapes, keyNames):
     numOfWeights = len(keyNames)
     with open(path, "r") as f:
-        # [:-3] deletes last delimiter to avoid float casting to ''
-        inp = f.read().replace('(', '').replace('... ); Estimated precision: 34 bits\n', '')[:-3]
+        # [:-39] deletes last phrase to avoid float casting to string
+        inp = f.read().replace('(', '')[:-39]
         inp = [float(x) for x in inp.split(',')]
         ans = OrderedDict()
         for i in range(numOfWeights):
