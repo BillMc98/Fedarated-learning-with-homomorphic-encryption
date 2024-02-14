@@ -36,7 +36,6 @@ int main(int argc, char** argv){
 
   // Initialize Public Key Containers
   LPKeyPair<DCRTPoly> kp;
-  LPEvalKey<DCRTPoly> partialKey;
 
   // Generate a public/private key pair
   if (strtol(argv[1], nullptr, 10) == 1){

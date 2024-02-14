@@ -53,16 +53,6 @@ int main(int argc, char** argv){
   }
 
   // Homomorphic additions
-  //Ciphertext<DCRTPoly> ciphertextAdd1;
-  //Ciphertext<DCRTPoly> ciphertextAdd2;
-  //vector<Ciphertext<DCRTPoly>> ciphertextAddResult(numberOfVectors,0);
-  //vector<Ciphertext<DCRTPoly>> ciphertextMultResult(numberOfVectors,0);
-  //for (int i=0; i<numberOfVectors; ++i){
-  //  ciphertextAdd1 = cc->EvalAdd(ciphertext[i], ciphertext[numberOfVectors+i]);
-  //  ciphertextAddResult[i] = cc->EvalAdd(ciphertextAdd1, ciphertext[2*numberOfVectors+i]);
-  //  ciphertextMultResult[i] = cc->EvalMult(ciphertextAddResult[i], double(1)/3);
-  //}
-
   int step = numberOfClients/2;
   bool isOdd = numberOfClients%2;
   while(step){

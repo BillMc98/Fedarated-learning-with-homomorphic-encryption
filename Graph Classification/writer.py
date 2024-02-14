@@ -1,5 +1,4 @@
 import re
-
 import torch
 import numpy as np
 import os
@@ -45,9 +44,10 @@ def ModelWriter(model, numOfClients):
 def reader(path, shapes, keyNames):
     numOfWeights = len(keyNames)
     with open(path, "r") as f:
-        # [:-39] deletes last phrase to avoid float casting to string
-        inp = f.read().replace('(', '')[:-39]
-        inp = [float(x) for x in inp.split(',')]
+        inp = f.read().replace('(', '').replace("\n", '').replace('...','').replace(' ','')
+        inp = re.sub(r"\)(.*?)bits", '', inp)
+        inp = list(filter(None, inp.split(',')))
+        inp = [float(x) for x in inp]
         ans = OrderedDict()
         for i in range(numOfWeights):
             if len(shapes[i]) > 1:

@@ -19,9 +19,9 @@ np.random.seed(12345)
 parser = argparse.ArgumentParser(description='Insert Arguments')
 
 parser.add_argument("--dataset", type=str, default="karateclub", help="dataset used for training")
-parser.add_argument("--clients", type=int, default=3, help="number of clients")
+parser.add_argument("--clients", type=int, default=2, help="number of clients")
 parser.add_argument("--split", type=float, default=0.8, help="test/train dataset split percentage")
-parser.add_argument("--parameterC", type=int, default=3, help="num of clients randomly selected to participate in Federated Learning")
+parser.add_argument("--parameterC", type=int, default=2, help="num of clients randomly selected to participate in Federated Learning")
 parser.add_argument("--hidden_channels", type=int, default=16, help="size of GNN hidden layer")
 parser.add_argument("--learning_rate", type=int, default=0.01, help="learning rate for training")
 parser.add_argument("--epochs", type=int, default=20, help="epochs for training")
@@ -54,7 +54,7 @@ for i in global_weights.keys():
     shapes.append(list(global_weights.get(i).shape))
 
 #Encrypt features
-subprocess.run(["./initialize", str(num_of_features)])
+subprocess.run(["./initialize", str(num_of_features), str(args.parameterC)])
 client_counter = 1
 for cl in client_list:
     cl.sx = writer(cl.x, client_counter)
@@ -82,7 +82,7 @@ serverdraw = []
 for round in range(args.federated_rounds+1):
     #Train Local Models
     for x in range(len(client_list)):
-        client_list[x].train_local_model(epochs=args.epochs+1, machine = MyMachine)
+        client_list[x].train_local_model(epochs=args.epochs+1, machine=MyMachine)
 
     # if round == 0:
     #     res = (tester(Client2.model, Client1, MyMachine) +tester(Client2.model, Client2, MyMachine) + tester(Client2.model, Client3, MyMachine))/3
@@ -99,7 +99,7 @@ for round in range(args.federated_rounds+1):
     for client in client_list:
         ModelWriter(client.model.state_dict(), model_counter)
         subprocess.run(["./encryptAggr", str(model_counter)])
-        model_counter +=1
+        model_counter += 1
 
     subprocess.run(["./aggregate", str(args.clients)])
     global_weights = reader("demoData/Average.txt", shapes, list(global_weights.keys()))

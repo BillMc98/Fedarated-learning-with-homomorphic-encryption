@@ -30,13 +30,8 @@ cc->Enable(ENCRYPTION);
 cc->Enable(SHE);
 cc->Enable(LEVELEDSHE);
 cc->Enable(MULTIPARTY);
+int numberOfClients = 2;
 
-  // LPPublicKey<DCRTPoly> pk;
-  // if (Serial::DeserializeFromFile(DATAFOLDER + "/key-public.txt", pk,
-  //                                 SerType::BINARY) == false) {
-  //   std::cerr << "Could not read public key" << std::endl;
-  //   return 1;
-  // }
 
   std::ifstream emkeys(DATAFOLDER + "/key-eval-mult.txt",
                        std::ios::in | std::ios::binary);
@@ -93,8 +88,8 @@ for (int i=0; i<l; ++i){
   }
 }
 
-vector<LPPrivateKey<DCRTPoly>> secretKey(3,0);
-for (int i=0; i<3; ++i){
+vector<LPPrivateKey<DCRTPoly>> secretKey(numberOfClients,0);
+for (int i=0; i<numberOfClients; ++i){
   if (Serial::DeserializeFromFile(DATAFOLDER + "/key-private" + std::to_string(i+1) + ".txt", secretKey[i],
                                   SerType::BINARY) == false) {
     std::cerr << "Could not read secret key" << std::endl;
@@ -115,8 +110,9 @@ for (int i=0; i<n; ++i){
     cSum = cc->EvalSum(cMul,m);
     for (int k=0; k<innerVectors; ++k){
       ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
-      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
-      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
+      for (int client=1; client<numberOfClients; ++client){
+        ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[client], {cSum})[0]); 
+      }
       cc->MultipartyDecryptFusion(ciphertextPartial, &out);
       out->SetLength(1);
       if (output.is_open())
@@ -125,12 +121,13 @@ for (int i=0; i<n; ++i){
       cSum = cc->EvalSum(cMul,m);
     }
       ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
-      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[1], {cSum})[0]);
-      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[2], {cSum})[0]);
-      cc->MultipartyDecryptFusion(ciphertextPartial, &out);
-      out->SetLength(1);
-      if (output.is_open())
-        output << out;
+    for (int client=1; client<numberOfClients; ++client){
+      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[client], {cSum})[0]);
+    }
+    cc->MultipartyDecryptFusion(ciphertextPartial, &out);
+    out->SetLength(1);
+    if (output.is_open())
+      output << out;
     ciphertextPartial.clear();
   }
 }

@@ -33,8 +33,6 @@ class GraphConvolution(Module):
             self.bias.data.uniform_(-stdv, stdv)
 
     def forward(self, MyMachine, id, label):
-        # support = torch.mm(input, self.weight)
-        # output = torch.mm(adj, support)
         # encrypt weight
         WeightWriter(torch.transpose(self.weight, 0, 1))
         subprocess.run(["./encryptWeights", str(self.weight.shape[0])])

@@ -12,3 +12,5 @@ save/
 __pycache__/
 data/
 Centralized/
+Result_Plots/
+Result_Reports/
