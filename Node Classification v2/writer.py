@@ -60,11 +60,23 @@ def reader(path, shapes, keyNames):
     return ans
 
 
-def conv_reader(path, shape1, shape2):
+def conv_reader(path, shape1, shape2, id):
     matrix = np.empty([1, shape1 * shape2])
     with open(path, "r") as f:
-        for i in range(shape1 * shape2):
-            matrix[0, i] = float(re.findall("\d+\.\d+", f.readline())[0])
+        if id == 1:
+            for i in range(shape1 * shape2):
+                inp = f.readline().replace('(', '').replace("\n", '').replace('...','').replace(' ','')
+                inp = re.sub(r"\)(.*?)bits", '', inp)
+                inp = list(filter(None, inp.split(',')))
+                counter = i//shape2
+                matrix[0, i] = float(inp[counter]) - float(inp[counter+1])
+        else:
+            for i in range(shape1 * shape2):
+                inp = f.readline().replace('(', '').replace("\n", '').replace('...', '').replace(' ', '')
+                inp = re.sub(r"\)(.*?)bits", '', inp)
+                inp = list(filter(None, inp.split(',')))
+                counter = i // shape2
+                matrix[0, i] = float(inp[counter+8]) - float(inp[counter+9])
     matrix = np.reshape(matrix, (shape1, shape2))
     ans = torch.from_numpy(matrix)
     return ans

@@ -58,7 +58,7 @@ class SecMachine:
         if label == 1:
             # matrix mult
             subprocess.run(["./matrixMult", str(num_of_lines), str(weight.shape[0]), str(weight.shape[1]), str(id)])
-            support = conv_reader("demoData/conv_output.txt", num_of_lines, weight.shape[1])
+            support = conv_reader("demoData/conv_output.txt", num_of_lines, weight.shape[1], id)
             # support = torch.mm(torch.tensor(list(self.features[id].values())), weight)
             output = torch.mm(torch.tensor(self.maps[id].A.astype(np.float32)), support.type(torch.float32))
             # true_nodes = len(self.node_keys[id])

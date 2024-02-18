@@ -16,10 +16,12 @@ SecurityLevel securityLevel = HEStd_128_classic;
   uint32_t depth = 2;
   uint32_t scaleFactorBits = 50;
 
-  int n = std::stoi(argv[1]);
-  int m = std::stoi(argv[2]);
-  int innerVectors = 8192/m;
-  int l = std::ceil(std::stof(argv[3])/innerVectors);
+  int rows = std::stoi(argv[1]);
+  int columns = std::stoi(argv[2]);
+  int maxInnerVectors = 8192/columns;
+  int innerVectors = std::stoi(argv[3]);
+  int l = std::ceil(float(innerVectors)/maxInnerVectors);
+  innerVectors = (innerVectors > maxInnerVectors) ? maxInnerVectors : innerVectors;
 
   // Instantiate the crypto context
   CryptoContext<DCRTPoly> cc =
@@ -69,10 +71,10 @@ int numberOfClients = 2;
     return 1;
   }
 
-vector<Ciphertext<DCRTPoly>> cipherX(n,0);
+vector<Ciphertext<DCRTPoly>> cipherX(rows,0);
 vector<Ciphertext<DCRTPoly>> cipherW(l,0);
 
-for (int i=0; i<n; ++i){
+for (int i=0; i<rows; ++i){
   if (Serial::DeserializeFromFile(DATAFOLDER + "/ciphertext" + argv[4] + std::to_string(i) + ".txt", cipherX[i],
                                   SerType::BINARY) == false) {
     std::cerr << "Could not read the ciphertext" << std::endl;
@@ -99,36 +101,25 @@ for (int i=0; i<numberOfClients; ++i){
 
 // Matrix multiplication and decryption should be done by different
 // entities, but here they happen simultaneously for efficiency
-Plaintext out;
-Ciphertext<DCRTPoly> cMul;
-Ciphertext<DCRTPoly> cSum;
 std::ofstream output(DATAFOLDER + "/conv_output.txt");
-vector<Ciphertext<DCRTPoly>> ciphertextPartial;
-for (int i=0; i<n; ++i){
+for (int i=0; i<rows; ++i){
   for (int j=0; j<l; ++j){
-    cMul = cc->EvalMult(cipherX[i], cipherW[j]);
-    cSum = cc->EvalSum(cMul,m);
+    Ciphertext<DCRTPoly> cMul = cc->EvalMult(cipherX[i], cipherW[j]);
+    Ciphertext<DCRTPoly> cSum = cc->EvalSum(cMul, columns);
+    Plaintext out;
     for (int k=0; k<innerVectors; ++k){
+      vector<Ciphertext<DCRTPoly>> ciphertextPartial;
       ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
       for (int client=1; client<numberOfClients; ++client){
         ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[client], {cSum})[0]); 
       }
       cc->MultipartyDecryptFusion(ciphertextPartial, &out);
-      out->SetLength(1);
+      out->SetLength(2*rows);
       if (output.is_open())
         output << out;
-      cMul = cc->EvalAtIndex(cMul, m);
-      cSum = cc->EvalSum(cMul,m);
+      cMul = cc->EvalAtIndex(cMul, columns);
+      cSum = cc->EvalSum(cMul,columns);
     }
-      ciphertextPartial.push_back(cc->MultipartyDecryptLead(secretKey[0], {cSum})[0]);
-    for (int client=1; client<numberOfClients; ++client){
-      ciphertextPartial.push_back(cc->MultipartyDecryptMain(secretKey[client], {cSum})[0]);
-    }
-    cc->MultipartyDecryptFusion(ciphertextPartial, &out);
-    out->SetLength(1);
-    if (output.is_open())
-      output << out;
-    ciphertextPartial.clear();
   }
 }
 
